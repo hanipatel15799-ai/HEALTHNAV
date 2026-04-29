@@ -1,0 +1,152 @@
+{
+  "version": "2.0",
+  "description": "HealthNav structured extraction prompts per document category",
+
+  "system_instruction": "You are a medical data extraction specialist. Extract structured data from medical documents with extreme precision. Return ONLY valid JSON. Never fabricate values not present in the document. Leave missing fields as empty strings, not null. Preserve units exactly.",
+
+  "table_layout_note": "CRITICAL: This text was extracted from a PDF. Table columns are often split across separate lines. A lab result like:  Haemoglobin / G% / 13.00-17.00 / 15.7  appears as 4 separate lines. Read top-to-bottom and group: test_name → unit → reference_range → test_value.",
+
+  "lab_report": {
+    "report_type_value": "lab_report",
+    "schema": {
+      "report_type": "lab_report",
+      "report_date": "",
+      "confidence": "high|medium|low",
+      "notes": "",
+      "labs": [
+        {
+          "test_date": "",
+          "test_name": "exact name from report",
+          "test_value": "numeric or text result",
+          "unit": "unit string",
+          "reference_range": "low - high or descriptive",
+          "is_abnormal": false,
+          "lab_name": "facility name if visible"
+        }
+      ],
+      "visits": [],
+      "medications": []
+    },
+    "rules": [
+      "Extract EVERY lab test — include all panels, not just abnormal",
+      "is_abnormal=true if marked H, HH, L, LL or value clearly outside reference range",
+      "Include rows even when test_value is empty — set test_value to empty string",
+      "lab_name = the laboratory facility name (e.g. Neuberg Supratech)",
+      "Do NOT include boilerplate interpretation paragraphs as lab rows",
+      "Return [] for visits and medications unless explicitly present"
+    ]
+  },
+
+  "medication_list": {
+    "report_type_value": "medication_list",
+    "schema": {
+      "report_type": "medication_list",
+      "report_date": "",
+      "confidence": "high|medium|low",
+      "notes": "",
+      "labs": [],
+      "visits": [],
+      "medications": [
+        {
+          "medication_name": "exact drug name",
+          "dosage": "e.g. 500mg",
+          "frequency": "e.g. twice daily",
+          "start_date": "YYYY-MM-DD or empty",
+          "end_date": "YYYY-MM-DD or empty",
+          "prescribing_doctor": "doctor name if visible",
+          "indication": "condition being treated",
+          "is_active": true
+        }
+      ]
+    },
+    "rules": [
+      "Extract EVERY medication listed",
+      "is_active=true unless document says stopped, discontinued, or has an end_date",
+      "Preserve exact drug names including brand names",
+      "dosage and frequency should be exactly as written",
+      "Do not invent medications not present in the document"
+    ]
+  },
+
+  "visit_summary": {
+    "report_type_value": "visit_summary",
+    "schema": {
+      "report_type": "visit_summary",
+      "report_date": "",
+      "confidence": "high|medium|low",
+      "notes": "",
+      "labs": [],
+      "visits": [
+        {
+          "visit_date": "YYYY-MM-DD",
+          "visit_type": "e.g. General Checkup, Follow-up, Emergency",
+          "chief_complaint": "primary reason for visit",
+          "clinical_notes": "summary of findings, up to 500 chars",
+          "doctor_name": "doctor name if visible"
+        }
+      ],
+      "medications": []
+    },
+    "rules": [
+      "visit_date is required — use report date as fallback if not explicit",
+      "clinical_notes should summarize key findings, diagnoses, and recommendations",
+      "Extract any medications mentioned in the visit as visit context only",
+      "Do not fabricate diagnoses not stated in the document"
+    ]
+  },
+
+  "discharge_summary": {
+    "report_type_value": "discharge_summary",
+    "schema": {
+      "report_type": "discharge_summary",
+      "report_date": "",
+      "confidence": "high|medium|low",
+      "notes": "",
+      "labs": [],
+      "visits": [
+        {
+          "visit_date": "YYYY-MM-DD",
+          "visit_type": "Discharge Summary",
+          "chief_complaint": "reason for admission",
+          "clinical_notes": "admission → treatment → discharge summary",
+          "doctor_name": "attending physician"
+        }
+      ],
+      "medications": [
+        {
+          "medication_name": "",
+          "dosage": "",
+          "frequency": "",
+          "start_date": "",
+          "end_date": "",
+          "prescribing_doctor": "",
+          "indication": "",
+          "is_active": true
+        }
+      ]
+    },
+    "rules": [
+      "Extract both the visit summary AND discharge medications",
+      "Discharge medications should have is_active=true unless explicitly stopped",
+      "clinical_notes = admission diagnosis + key events + discharge condition"
+    ]
+  },
+
+  "other": {
+    "report_type_value": "general",
+    "schema": {
+      "report_type": "general",
+      "report_date": "",
+      "confidence": "high|medium|low",
+      "notes": "brief summary of what this document contains",
+      "labs": [],
+      "visits": [],
+      "medications": []
+    },
+    "rules": [
+      "Extract any labs, visits, or medications if present",
+      "notes field should describe the document type and key content",
+      "Confidence should be low if document type is unclear"
+    ]
+  }
+}

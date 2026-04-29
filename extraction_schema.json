@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExtractionResult",
+  "description": "Complete structured extraction output from a medical document",
+  "type": "object",
+  "required": ["report_type", "confidence"],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "enum": ["lab_report", "medication_list", "visit_summary", "discharge_summary", "general"],
+      "description": "Detected document category"
+    },
+    "report_date": {
+      "type": "string",
+      "description": "Date of the report in ISO format YYYY-MM-DD"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "AI confidence in the extraction quality"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any extraction notes or caveats"
+    },
+    "labs": {
+      "type": "array",
+      "items": { "$ref": "lab_schema.json" },
+      "description": "Extracted lab results. Empty array if none present."
+    },
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["visit_date"],
+        "properties": {
+          "visit_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "visit_type": { "type": "string" },
+          "chief_complaint": { "type": "string" },
+          "clinical_notes": { "type": "string" },
+          "doctor_name": { "type": "string" }
+        }
+      },
+      "description": "Extracted visit notes. Empty array if none present."
+    },
+    "medications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["medication_name"],
+        "properties": {
+          "medication_name": { "type": "string", "minLength": 1 },
+          "dosage": { "type": "string" },
+          "frequency": { "type": "string" },
+          "start_date": { "type": "string" },
+          "end_date": { "type": "string" },
+          "prescribing_doctor": { "type": "string" },
+          "indication": { "type": "string" },
+          "is_active": { "type": "boolean", "default": true }
+        }
+      },
+      "description": "Extracted medications. Empty array if none present."
+    }
+  },
+
+  "x-db-mapping": {
+    "labs": "patient_labs",
+    "visits": "patient_visits",
+    "medications": "patient_medications",
+    "raw_text": "patient_file_extractions (extraction_mode=raw_extract)",
+    "structured": "patient_file_extractions (extraction_mode=structured_extract)"
+  },
+
+  "x-hipaa-notes": {
+    "patient_id_source": "authenticated session only — never from request body",
+    "phi_fields": ["test_name", "test_value", "clinical_notes", "medication_name"],
+    "audit_required": true
+  }
+}

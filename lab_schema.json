@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LabResult",
+  "description": "A single parsed laboratory test result row",
+  "type": "object",
+  "required": ["test_name"],
+  "properties": {
+    "test_date": {
+      "type": "string",
+      "description": "ISO date YYYY-MM-DD. Resolved from report date if not per-row.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "test_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Lab test name as it appears in the report. Required."
+    },
+    "test_value": {
+      "type": "string",
+      "description": "Numeric or text result value. Empty string allowed."
+    },
+    "unit": {
+      "type": "string",
+      "description": "Measurement unit (e.g. mg/dL, g/dL). Empty string if not present."
+    },
+    "reference_range": {
+      "type": "string",
+      "description": "Normal reference range as printed (e.g. 13.0 - 17.5). Empty string if not present."
+    },
+    "is_abnormal": {
+      "type": "boolean",
+      "description": "True if marked H, HH, L, LL or value is outside reference range.",
+      "default": false
+    },
+    "lab_name": {
+      "type": "string",
+      "description": "Laboratory facility name. Empty string if not visible."
+    }
+  },
+  "additionalProperties": false,
+
+  "x-db-mapping": {
+    "table": "patient_labs",
+    "columns": {
+      "test_date": "test_date",
+      "test_name": "test_name",
+      "test_value": "test_value",
+      "unit": "unit",
+      "reference_range": "reference_range",
+      "is_abnormal": "is_abnormal",
+      "lab_name": "lab_name"
+    },
+    "patient_id_source": "session",
+    "unique_constraint": "uq_patient_lab (patient_id, test_date, test_name, test_value)"
+  }
+}
