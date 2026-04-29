@@ -1,0 +1,40 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/healthnav:$COMMIT_SHA'
+      - '.'
+
+  # Push to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/healthnav:$COMMIT_SHA'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'healthnav'
+      - '--image=gcr.io/$PROJECT_ID/healthnav:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
+      - '--set-secrets=APP_SECRET=healthnav-app-secret:latest'
+      - '--set-secrets=DB_PASSWORD=healthnav-db-password:latest'
+      - '--set-secrets=DB_HOST=healthnav-db-host:latest'
+      - '--set-secrets=DB_NAME=healthnav-db-name:latest'
+      - '--set-secrets=DB_USER=healthnav-db-user:latest'
+      - '--memory=2Gi'
+      - '--cpu=2'
+      - '--min-instances=0'
+      - '--max-instances=10'
+      - '--timeout=300'
+
+images:
+  - 'gcr.io/$PROJECT_ID/healthnav:$COMMIT_SHA'
