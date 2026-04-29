@@ -1,0 +1,7 @@
+Phase 1: Gemini developer API prototype
+Phase 2: PostgreSQL + patient record retrieval
+Phase 3: FastAPI dashboard
+Phase 4: pgvector + hybrid retrieval
+Phase 5: Vertex AI migration
+Phase 6: username/password auth + signed session cookies
+Phase 7: audit logging + PHI improvements
