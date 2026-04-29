@@ -1,0 +1,13 @@
+.env
+*.json
+vertex-key.json
+
+venv/
+__pycache__/
+*.pyc
+
+Uploads/
+temp_chat_uploads/
+audit/
+
+*.log
