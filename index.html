@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>HealthNav</title>
+<style>
+:root{--bg:#f8f9fa;--surface:#fff;--border:#e9ecef;--primary:#4361ee;--primary-d:#3451d1;
+--text:#212529;--muted:#6c757d;--green:#2dc653;--red:#e5383b;--amber:#fca311;
+--blue-light:#e8f0fe;--radius:10px;--shadow:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:var(--primary);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(67,97,238,.3);}
+.topbar .brand{font-size:18px;font-weight:700;}
+.topbar-right{display:flex;align-items:center;gap:12px;font-size:13px;}
+.patient-badge{background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;font-size:12px;}
+.btn-logout{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;}
+.btn-logout:hover{background:rgba(255,255,255,.15);}
+.layout{display:grid;grid-template-columns:220px 1fr;flex:1;min-height:0;}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px);}
+.main{overflow-y:auto;padding:24px;max-width:960px;width:100%;}
+.nav-section{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:12px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;font-size:13px;color:var(--text);cursor:pointer;border-left:3px solid transparent;transition:all .15s;}
+.nav-item:hover{background:var(--blue-light);color:var(--primary);}
+.nav-item.active{background:var(--blue-light);color:var(--primary);border-left-color:var(--primary);font-weight:500;}
+.nav-icon{font-size:15px;width:20px;text-align:center;}
+.nav-item.add-item{color:var(--primary);font-size:12px;}
+.section{display:none;}.section.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.card-title .sub{font-size:12px;color:var(--muted);font-weight:400;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:var(--shadow);}
+.stat-num{font-size:28px;font-weight:700;line-height:1;}
+.stat-label{font-size:11px;color:var(--muted);margin-top:4px;}
+.stat-num.green{color:var(--green);}.stat-num.red{color:var(--red);}.stat-num.blue{color:var(--primary);}.stat-num.amber{color:var(--amber);}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);background:#fafafa;}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border);}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:#fafafa;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-red{background:#fee2e2;color:#dc2626;}.badge-green{background:#dcfce7;color:#16a34a;}
+.badge-amber{background:#fef3c7;color:#d97706;}.badge-blue{background:#dbeafe;color:#2563eb;}
+.badge-gray{background:#f3f4f6;color:#4b5563;}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--primary);background:var(--blue-light);}
+.upload-zone h3{font-size:15px;margin:10px 0 6px;}.upload-zone p{font-size:12px;color:var(--muted);}
+.upload-icon{font-size:36px;}
+.file-type-pills{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:10px;}
+.pill{background:var(--blue-light);color:var(--primary);padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group label{font-size:12px;font-weight:500;color:var(--muted);}
+.form-group input,.form-group select,.form-group textarea{border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;outline:none;font-family:inherit;background:#fff;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);}
+.btn{padding:9px 18px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--primary);color:#fff;}.btn-primary:hover{background:var(--primary-d);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border);}.btn-outline:hover{background:var(--bg);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:8px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#7209b7);border-radius:2px;transition:width .4s;}
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 240px);min-height:400px;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;margin-bottom:12px;}
+.msg{max-width:85%;padding:11px 14px;border-radius:10px;font-size:14px;line-height:1.55;}
+.msg-user{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:2px;}
+.msg-ai{background:#f1f3f5;color:var(--text);align-self:flex-start;border-bottom-left-radius:2px;}
+.msg-thinking{color:var(--muted);font-style:italic;animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.msg-sources{font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.06);}
+.chat-form{display:flex;gap:8px;align-items:flex-end;}
+.chat-input{flex:1;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;resize:none;outline:none;font-family:inherit;max-height:120px;min-height:44px;}
+.chat-input:focus{border-color:var(--primary);}
+.chat-attach-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.quick-questions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.quick-q{background:var(--blue-light);color:var(--primary);border:1px solid #c7d7fd;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;}
+.quick-q:hover{background:#d0e0fd;}
+.auth-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center;}
+.auth-screen.active{display:flex;}
+.auth-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:36px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+.auth-card h2{font-size:22px;margin-bottom:6px;}.auth-card p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.auth-error{color:var(--red);font-size:13px;margin-top:8px;min-height:20px;}
+.file-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+.status-done{background:var(--green);}.status-queued{background:var(--amber);animation:pulse 1s infinite;}
+.status-failed{background:var(--red);}.status-unsupported{background:#adb5bd;}
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:12px 16px;border-radius:8px;font-size:13px;min-width:240px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);animation:slide-in .2s ease;}
+.toast-success{border-left:4px solid var(--green);}.toast-error{border-left:4px solid var(--red);}.toast-info{border-left:4px solid var(--primary);}
+@keyframes slide-in{from{transform:translateX(50px);opacity:0}to{transform:none;opacity:1}}
+.empty-state{text-align:center;padding:40px 24px;color:var(--muted);}
+.empty-state .icon{font-size:36px;margin-bottom:10px;opacity:.5;}
+.empty-state p{font-size:13px;}
+@media(max-width:700px){.layout{grid-template-columns:1fr;}.sidebar{display:none;}.stats-grid{grid-template-columns:1fr 1fr;}.form-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="auth-screen active" id="auth-screen">
+  <div class="auth-card">
+    <h2>🩺 HealthNav</h2><p>Your personal health AI portal</p>
+    <div id="auth-login">
+      <div class="form-group" style="margin-bottom:10px"><label>Username</label>
+        <input type="text" id="login-user" placeholder="username" autocomplete="username"/></div>
+      <div class="form-group" style="margin-bottom:16px"><label>Password</label>
+        <input type="password" id="login-pass" placeholder="password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doLogin()" id="login-btn">Sign in</button>
+      <div class="auth-error" id="login-err"></div>
+      <p style="text-align:center;margin-top:14px;font-size:13px">No account? <a href="#" onclick="showReg()" style="color:var(--primary)">Register</a></p>
+    </div>
+    <div id="auth-register" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>Username</label><input type="text" id="reg-user" placeholder="username"/></div>
+        <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com"/></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Full name (optional)</label><input type="text" id="reg-name"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="8+ characters"/></div>
+        <div class="form-group"><label>Confirm</label><input type="password" id="reg-pass2"/></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doRegister()">Create account</button>
+      <div class="auth-error" id="reg-err"></div>
+      <p style="text-align:center;margin-top:14px;font-size:13px">Have account? <a href="#" onclick="showLogin()" style="color:var(--primary)">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none;flex-direction:column;min-height:100vh">
+<div class="topbar">
+  <div class="brand">🩺 HealthNav</div>
+  <div class="topbar-right">
+    <span class="patient-badge" id="topbar-patient">—</span>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="go('overview')" id="nav-overview"><span class="nav-icon">🏠</span> Overview</div>
+    <div class="nav-item" onclick="go('chat')" id="nav-chat"><span class="nav-icon">💬</span> Ask HealthNav</div>
+    <div class="nav-section">My Records</div>
+    <div class="nav-item" onclick="go('labs')" id="nav-labs"><span class="nav-icon">🧪</span> Labs</div>
+    <div class="nav-item" onclick="go('visits')" id="nav-visits"><span class="nav-icon">📋</span> Visits</div>
+    <div class="nav-item" onclick="go('medications')" id="nav-medications"><span class="nav-icon">💊</span> Medications</div>
+    <div class="nav-item" onclick="go('files')" id="nav-files"><span class="nav-icon">📁</span> Files</div>
+    <div class="nav-section">Add Data</div>
+    <div class="nav-item add-item" onclick="go('upload')" id="nav-upload"><span class="nav-icon">⬆️</span> Upload</div>
+    <div class="nav-item add-item" onclick="go('add-lab')"><span class="nav-icon">➕</span> Add Lab</div>
+    <div class="nav-item add-item" onclick="go('add-visit')"><span class="nav-icon">➕</span> Add Visit</div>
+    <div class="nav-item add-item" onclick="go('add-med')"><span class="nav-icon">➕</span> Add Medication</div>
+  </nav>
+  <main class="main">
+
+    <!-- Overview -->
+    <div class="section active" id="section-overview">
+      <h2 style="margin-bottom:16px">Overview</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num blue" id="s-labs">—</div><div class="stat-label">Total labs</div></div>
+        <div class="stat-card"><div class="stat-num red" id="s-abn">—</div><div class="stat-label">Abnormal</div></div>
+        <div class="stat-card"><div class="stat-num blue" id="s-vis">—</div><div class="stat-label">Visits</div></div>
+        <div class="stat-card"><div class="stat-num green" id="s-med">—</div><div class="stat-label">Active meds</div></div>
+      </div>
+      <div class="card"><div class="card-title">Recent labs <span class="sub">last 10</span></div><div id="ov-labs"></div></div>
+      <div class="card"><div class="card-title">Abnormal results</div><div id="ov-abn"></div></div>
+    </div>
+
+    <!-- Chat -->
+    <div class="section" id="section-chat">
+      <h2 style="margin-bottom:4px">Ask HealthNav</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Ask about your results, medications, or any health question.</p>
+      <div class="quick-questions">
+        <span class="quick-q" onclick="qask('Summarize my recent lab results')">📊 Summarize labs</span>
+        <span class="quick-q" onclick="qask('What are my abnormal results?')">⚠️ Abnormal results</span>
+        <span class="quick-q" onclick="qask('What medications am I on?')">💊 My medications</span>
+        <span class="quick-q" onclick="qask('Explain my Vitamin D level')">🌞 Vitamin D</span>
+        <span class="quick-q" onclick="qask('What does my HDL cholesterol mean?')">❤️ Cholesterol</span>
+      </div>
+      <div class="chat-attach-row">
+        <label style="font-size:12px;color:var(--muted)">Attach file:</label>
+        <input type="file" id="chat-file" style="font-size:12px" accept=".pdf,.jpg,.jpeg,.png,.csv,.txt"/>
+        <label style="font-size:12px;display:flex;align-items:center;gap:4px">
+          <input type="checkbox" id="chat-save"/> Save to records
+        </label>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-msgs">
+          <div class="msg msg-ai">Hello! I'm HealthNav. Ask me about your health records, uploaded reports, or any medical questions. ⚕️</div>
+        </div>
+        <div class="chat-form">
+          <textarea class="chat-input" id="chat-in" rows="2" placeholder="Ask a health question..."
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+          <button class="btn btn-primary" onclick="sendChat()" id="chat-btn">Send ↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Labs -->
+    <div class="section" id="section-labs">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2>Lab Results</h2><button class="btn btn-outline btn-sm" onclick="go('add-lab')">➕ Add</button>
+      </div>
+      <div class="card"><div id="labs-body"><div class="empty-state"><div class="icon">🧪</div><p>No labs yet</p></div></div></div>
+    </div>
+
+    <!-- Visits -->
+    <div class="section" id="section-visits">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2>Visit Notes</h2><button class="btn btn-outline btn-sm" onclick="go('add-visit')">➕ Add</button>
+      </div>
+      <div id="vis-body"><div class="empty-state"><div class="icon">📋</div><p>No visits yet</p></div></div>
+    </div>
+
+    <!-- Medications -->
+    <div class="section" id="section-medications">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2>Medications</h2><button class="btn btn-outline btn-sm" onclick="go('add-med')">➕ Add</button>
+      </div>
+      <div id="meds-body"><div class="empty-state"><div class="icon">💊</div><p>No medications yet</p></div></div>
+    </div>
+
+    <!-- Files -->
+    <div class="section" id="section-files">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2>Uploaded Files</h2><button class="btn btn-outline btn-sm" onclick="go('upload')">⬆️ Upload</button>
+      </div>
+      <div id="files-body"><div class="empty-state"><div class="icon">📁</div><p>No files yet</p></div></div>
+    </div>
+
+    <!-- Upload -->
+    <div class="section" id="section-upload">
+      <h2 style="margin-bottom:16px">Upload a Document</h2>
+      <div class="card">
+        <div class="upload-zone" id="upzone" onclick="document.getElementById('upfile').click()">
+          <div class="upload-icon">📁</div>
+          <h3>Click or drop a file here</h3><p>PDF · Image · TXT · CSV — up to 50 MB</p>
+          <div class="file-type-pills"><span class="pill">PDF</span><span class="pill">JPEG</span><span class="pill">PNG</span><span class="pill">CSV</span><span class="pill">TXT</span></div>
+        </div>
+        <input type="file" id="upfile" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt" onchange="selectFile(this.files[0])"/>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+          <div class="form-group"><label>Category</label>
+            <select id="up-cat"><option value="lab_report">Lab report</option><option value="visit_summary">Visit summary</option><option value="discharge_summary">Discharge summary</option><option value="medication_list">Medication list</option><option value="other">Other</option></select>
+          </div>
+          <div class="form-group"><label>Note (optional)</label><input type="text" id="up-note" placeholder="Brief description"/></div>
+        </div>
+        <div id="up-preview" style="display:none;margin-top:10px;padding:10px;background:#f8f9fa;border-radius:7px;font-size:13px">
+          Selected: <strong id="up-filename"></strong>
+        </div>
+        <div id="up-progress" style="display:none;margin-top:12px">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px" id="up-prog-label">Uploading...</div>
+          <div class="progress-bar"><div class="progress-fill" id="up-prog-fill" style="width:30%"></div></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="doUpload()" id="up-btn" disabled>Upload</button>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">HealthNav will automatically extract labs, visits, and medications.</p>
+      </div>
+      <div class="card" id="up-result" style="display:none">
+        <div class="card-title" id="up-result-title">Parsing complete ✓</div>
+        <div id="up-result-body"></div>
+      </div>
+      <div class="card"><div class="card-title">Recently uploaded files</div><div id="recent-up"></div></div>
+    </div>
+
+    <!-- Add Lab -->
+    <div class="section" id="section-add-lab">
+      <h2 style="margin-bottom:16px">Add Lab Result</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group"><label>Test name *</label><input type="text" id="al-name" placeholder="e.g. Haemoglobin"/></div>
+          <div class="form-group"><label>Test date *</label><input type="date" id="al-date"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Value</label><input type="text" id="al-val" placeholder="e.g. 15.7"/></div>
+          <div class="form-group"><label>Unit</label><input type="text" id="al-unit" placeholder="e.g. g/dL"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Reference range</label><input type="text" id="al-range" placeholder="e.g. 13.0-17.5"/></div>
+          <div class="form-group"><label>Lab name</label><input type="text" id="al-lab" placeholder="e.g. City Lab"/></div>
+        </div>
+        <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:14px">
+          <input type="checkbox" id="al-abn" style="width:auto"/><label style="font-size:13px;color:var(--text)">Mark as abnormal</label>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="savelab()">Save</button>
+          <button class="btn btn-outline" onclick="go('labs')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Visit -->
+    <div class="section" id="section-add-visit">
+      <h2 style="margin-bottom:16px">Add Visit Note</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group"><label>Visit date *</label><input type="date" id="av-date"/></div>
+          <div class="form-group"><label>Visit type</label><input type="text" id="av-type" placeholder="e.g. General Checkup"/></div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px"><label>Chief complaint</label><input type="text" id="av-comp" placeholder="Reason for visit"/></div>
+        <div class="form-group" style="margin-bottom:10px"><label>Clinical notes</label><textarea id="av-notes" rows="3" placeholder="Notes..."></textarea></div>
+        <div class="form-group" style="margin-bottom:14px"><label>Doctor</label><input type="text" id="av-doc" placeholder="Dr. Name"/></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="savevisit()">Save</button>
+          <button class="btn btn-outline" onclick="go('visits')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Medication -->
+    <div class="section" id="section-add-med">
+      <h2 style="margin-bottom:16px">Add Medication</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group"><label>Medication name *</label><input type="text" id="am-name" placeholder="e.g. Metformin"/></div>
+          <div class="form-group"><label>Dosage</label><input type="text" id="am-dose" placeholder="e.g. 500mg"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Frequency</label><input type="text" id="am-freq" placeholder="e.g. Twice daily"/></div>
+          <div class="form-group"><label>Start date</label><input type="date" id="am-start"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Doctor</label><input type="text" id="am-doc" placeholder="Prescribing doctor"/></div>
+          <div class="form-group"><label>Indication</label><input type="text" id="am-ind" placeholder="e.g. Type 2 Diabetes"/></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-primary" onclick="savemed()">Save</button>
+          <button class="btn btn-outline" onclick="go('medications')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+<div id="toast-wrap"></div>
+
+<script>
+const A='';let S=null,_f=null,_pi={};
+async function req(u,o={}){o.credentials='include';return fetch(A+u,o);}
+async function jreq(u,body,m='POST'){return req(u,{method:m,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+
+async function doLogin(){
+  const u=v('login-user'),p=v('login-pass');E('login-err','');
+  document.getElementById('login-btn').disabled=true;
+  try{const r=await jreq('/api/login',{username:u,password:p});const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Login failed');S=d;onIn();}
+  catch(e){E('login-err',e.message);}
+  finally{document.getElementById('login-btn').disabled=false;}
+}
+async function doRegister(){
+  const u=v('reg-user'),e=v('reg-email'),n=v('reg-name'),p=v('reg-pass'),p2=v('reg-pass2');E('reg-err','');
+  try{const r=await jreq('/api/register',{username:u,email:e,full_name:n,password:p,confirm_password:p2});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail);S=d;onIn();}
+  catch(e){E('reg-err',e.message);}
+}
+async function doLogout(){await req('/api/logout',{method:'POST'});S=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').classList.add('active');}
+function showReg(){document.getElementById('auth-login').style.display='none';document.getElementById('auth-register').style.display='block';}
+function showLogin(){document.getElementById('auth-register').style.display='none';document.getElementById('auth-login').style.display='block';}
+async function checkSession(){try{const r=await req('/api/me');if(r.ok){S=await r.json();onIn();}}catch(_){}}
+function onIn(){
+  document.getElementById('auth-screen').classList.remove('active');
+  document.getElementById('app').style.display='flex';
+  document.getElementById('topbar-patient').textContent=S.username+' · '+(S.patient_id||'').slice(-8);
+  loadOverview();loadRecentUp();
+}
+
+function go(n){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  const s=document.getElementById('section-'+n);if(s)s.classList.add('active');
+  const nv=document.getElementById('nav-'+n);if(nv)nv.classList.add('active');
+  if(n==='labs')loadLabs();if(n==='visits')loadVisits();
+  if(n==='medications')loadMeds();if(n==='files')loadFiles();
+  if(n==='overview')loadOverview();
+  if(n==='add-lab')document.getElementById('al-date').value=td();
+  if(n==='add-visit')document.getElementById('av-date').value=td();
+}
+function td(){return new Date().toISOString().split('T')[0];}
+function v(id){return(document.getElementById(id)||{}).value||'';}
+function E(id,txt){const e=document.getElementById(id);if(e)e.textContent=txt;}
+
+async function loadOverview(){
+  try{const[sum,labs,abn]=await Promise.all([
+    req('/api/summary').then(r=>r.json()),
+    req('/api/labs?limit=10').then(r=>r.json()),
+    req('/api/labs/abnormal').then(r=>r.json()),
+  ]);
+  E('s-labs',sum.total_labs??0);E('s-abn',sum.abnormal_count??0);
+  E('s-vis',sum.total_visits??0);E('s-med',sum.active_meds??0);
+  renderLabs('ov-labs',labs.labs||[]);renderAbn('ov-abn',abn.labs||[]);}catch(_){}
+}
+async function loadLabs(){try{const d=await req('/api/labs?limit=200').then(r=>r.json());renderLabsFull('labs-body',d.labs||[]);}catch(_){}}
+async function loadVisits(){try{const d=await req('/api/visits').then(r=>r.json());renderVisits('vis-body',d.visits||[]);}catch(_){}}
+async function loadMeds(){try{const d=await req('/api/medications').then(r=>r.json());renderMeds('meds-body',d.medications||[]);}catch(_){}}
+async function loadFiles(){try{const d=await req('/api/files').then(r=>r.json());renderFiles('files-body',d.files||[]);}catch(_){}}
+async function loadRecentUp(){try{const d=await req('/api/files').then(r=>r.json());renderFiles('recent-up',(d.files||[]).slice(0,5));}catch(_){}}
+
+function fb(abn){if(abn===null||abn===undefined||abn===false)return'<span class="badge badge-green">Normal</span>';
+  return'<span class="badge badge-red">Abnormal</span>';}
+function fd(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(_){return String(d).split('T')[0];}}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+function renderLabs(id,ls){const e=document.getElementById(id);
+  if(!ls.length){e.innerHTML='<div class="empty-state"><div class="icon">🧪</div><p>No labs yet. Upload a report to get started.</p></div>';return;}
+  e.innerHTML=`<table class="data-table"><thead><tr><th>Test</th><th>Result</th><th>Unit</th><th>Date</th><th>Status</th></tr></thead><tbody>`
+    +ls.map(l=>`<tr><td>${esc(l.test_name||'')}</td><td><strong>${esc(l.test_value||'')}</strong></td><td>${esc(l.unit||'')}</td><td>${fd(l.test_date)}</td><td>${fb(l.is_abnormal)}</td></tr>`).join('')
+    +'</tbody></table>';}
+
+function renderLabsFull(id,ls){const e=document.getElementById(id);
+  if(!ls.length){e.innerHTML='<div class="empty-state"><div class="icon">🧪</div><p>No lab results. Upload a report or add manually.</p></div>';return;}
+  e.innerHTML=`<table class="data-table"><thead><tr><th>Test</th><th>Value</th><th>Unit</th><th>Reference</th><th>Date</th><th>Lab</th><th>Status</th></tr></thead><tbody>`
+    +ls.map(l=>`<tr><td>${esc(l.test_name||'')}</td><td><strong>${esc(l.test_value||'')}</strong></td><td>${esc(l.unit||'')}</td><td style="font-size:12px;color:var(--muted)">${esc(l.reference_range||'')}</td><td>${fd(l.test_date)}</td><td style="font-size:12px;color:var(--muted)">${esc(l.lab_name||'')}</td><td>${fb(l.is_abnormal)}</td></tr>`).join('')
+    +'</tbody></table>';}
+
+function renderAbn(id,ls){const e=document.getElementById(id);
+  const ab=ls.filter(l=>l.is_abnormal);
+  if(!ab.length){e.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>No abnormal results.</p></div>';return;}
+  e.innerHTML=`<table class="data-table"><thead><tr><th>Test</th><th>Value</th><th>Unit</th><th>Reference</th><th>Date</th></tr></thead><tbody>`
+    +ab.map(l=>`<tr><td><strong>${esc(l.test_name||'')}</strong></td><td style="color:var(--red);font-weight:600">${esc(l.test_value||'')}</td><td>${esc(l.unit||'')}</td><td style="font-size:12px;color:var(--muted)">${esc(l.reference_range||'')}</td><td>${fd(l.test_date)}</td></tr>`).join('')
+    +'</tbody></table>';}
+
+function renderVisits(id,vs){const e=document.getElementById(id);
+  if(!vs.length){e.innerHTML='<div class="empty-state"><div class="icon">📋</div><p>No visit notes yet.</p></div>';return;}
+  e.innerHTML=vs.map(v=>`<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><strong>${esc(v.visit_type||'Visit')}</strong><span class="badge badge-blue" style="margin-left:8px">${fd(v.visit_date)}</span>${v.doctor_name?`<span style="font-size:12px;color:var(--muted);margin-left:8px">${esc(v.doctor_name)}</span>`:''}</div>
+    </div>
+    ${v.chief_complaint?`<div style="margin-top:8px;font-size:13px"><strong>Complaint:</strong> ${esc(v.chief_complaint)}</div>`:''}
+    ${v.clinical_notes?`<div style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(v.clinical_notes)}</div>`:''}
+  </div>`).join('');}
+
+function renderMeds(id,ms){const e=document.getElementById(id);
+  if(!ms.length){e.innerHTML='<div class="empty-state"><div class="icon">💊</div><p>No medications yet.</p></div>';return;}
+  e.innerHTML=`<table class="data-table"><thead><tr><th>Medication</th><th>Dose</th><th>Frequency</th><th>Indication</th><th>Since</th><th>Status</th></tr></thead><tbody>`
+    +ms.map(m=>`<tr><td><strong>${esc(m.medication_name||'')}</strong></td><td>${esc(m.dosage||'')}</td><td>${esc(m.frequency||'')}</td><td style="font-size:12px;color:var(--muted)">${esc(m.indication||'')}</td><td>${fd(m.start_date)}</td><td>${m.is_active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td></tr>`).join('')
+    +'</tbody></table>';}
+
+function renderFiles(id,fs){const e=document.getElementById(id);
+  if(!fs.length){e.innerHTML='<div class="empty-state"><p>No files uploaded yet.</p></div>';return;}
+  e.innerHTML=fs.map(f=>{
+    const st=f.parse_status||'unknown';
+    const cls=st==='done'?'status-done':['queued','queued','processing','analyzing','parsing'].includes(st)?'status-queued':st==='failed'?'status-failed':'status-unsupported';
+    const labs=f.labs_parsed||0;
+    const det=st==='done'?(labs>0?`${labs} lab${labs>1?'s':''} extracted`:'No structured items extracted'):st==='failed'?'Parsing failed':st==='queued'||st==='processing'||st==='analyzing'?'Parsing...':'';
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:13px;font-weight:500">${esc(f.original_filename||'')}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${det} · ${fd(f.uploaded_at)}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px"><span class="file-status-dot ${cls}"></span>${st}</span>
+        <button class="btn btn-outline btn-sm" onclick="reparseFile(${f.id})">Re-parse</button>
+      </div></div>`;}).join('');}
+
+function selectFile(f){if(!f)return;_f=f;document.getElementById('up-filename').textContent=f.name;
+  document.getElementById('up-preview').style.display='block';document.getElementById('up-btn').disabled=false;}
+const uz=document.getElementById('upzone');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('dragover');});
+uz.addEventListener('dragleave',()=>uz.classList.remove('dragover'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f){document.getElementById('upfile').files=e.dataTransfer.files;selectFile(f);}});
+
+async function doUpload(){
+  if(!_f)return;document.getElementById('up-btn').disabled=true;
+  showProg('Uploading...',30);
+  const fd=new FormData();fd.append('file',_f);fd.append('category',v('up-cat'));fd.append('notes',v('up-note'));
+  try{const r=await req('/api/upload',{method:'POST',body:fd});const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Upload failed');
+    toast('Uploaded. Parsing...','success');showProg('Parsing...',55);loadRecentUp();
+    if(d.file_id&&d.can_parse)pollParse(d.file_id,d.filename||_f.name);
+    else{hideProg();showRes({parse_status:'unsupported',labs_inserted:0},_f.name);document.getElementById('up-btn').disabled=false;}
+  }catch(e){hideProg();toast(e.message,'error');document.getElementById('up-btn').disabled=false;}
+}
+
+function pollParse(fid,fname){let n=0;
+  const iv=setInterval(async()=>{n++;
+    try{const r=await req(`/api/files/${fid}/parse-status`);const d=await r.json();
+      if(d.done||n>60){clearInterval(iv);hideProg();showRes(d,fname);
+        loadOverview();loadRecentUp();document.getElementById('up-btn').disabled=false;
+        if((d.labs_inserted||0)>0)toast(`✓ ${d.labs_inserted} labs extracted`,'success');}
+      else{const lbl={queued:'Queued...',parsing:'Parsing...',analyzing:'AI analyzing...',embedding:'Building index...'};
+        showProg(lbl[d.parse_status]||'Processing...',65);}
+    }catch(_){if(n>60)clearInterval(iv);}
+  },2500);}
+
+async function reparseFile(fid){
+  try{await req(`/api/files/${fid}/reparse`,{method:'POST'});toast('Re-parse queued.','info');
+    setTimeout(()=>{loadFiles();loadRecentUp();},600);
+    let n=0;const iv=setInterval(async()=>{n++;
+      const r=await req(`/api/files/${fid}/parse-status`);const d=await r.json();
+      if(d.done||n>40){clearInterval(iv);loadFiles();loadRecentUp();loadOverview();
+        if((d.labs_inserted||0)>0)toast(`✓ ${d.labs_inserted} labs extracted`,'success');}
+    },2500);}catch(e){toast('Failed','error');}
+}
+
+function showProg(lbl,pct){document.getElementById('up-progress').style.display='block';
+  E('up-prog-label',lbl);document.getElementById('up-prog-fill').style.width=pct+'%';}
+function hideProg(){document.getElementById('up-progress').style.display='none';}
+function showRes(d,fname){
+  const el=document.getElementById('up-result');el.style.display='block';
+  E('up-result-title',d.parse_status==='done'?'Parsing complete ✓ — '+fname:'Parsing '+d.parse_status+' — '+fname);
+  const labs=d.labs_inserted||0,vis=d.visits_inserted||0,meds=d.meds_inserted||0;
+  document.getElementById('up-result-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+      <div class="stat-card"><div class="stat-num blue">${labs}</div><div class="stat-label">Lab results</div></div>
+      <div class="stat-card"><div class="stat-num blue">${vis}</div><div class="stat-label">Visit notes</div></div>
+      <div class="stat-card"><div class="stat-num blue">${meds}</div><div class="stat-label">Medications</div></div>
+    </div>
+    ${d.confidence?`<div style="font-size:12px;color:var(--muted)">Confidence: <strong style="color:${d.confidence==='high'?'var(--green)':d.confidence==='low'?'var(--red)':'var(--amber)'}">${d.confidence}</strong></div>`:''}
+    ${labs===0&&d.parse_status==='done'?`<div style="margin-top:10px;padding:10px 14px;background:#fff8e1;border-radius:8px;font-size:13px;color:#7d5a00">No structured data extracted. You can still ask HealthNav about this file in chat.</div>`:''}
+    ${labs>0?`<div style="margin-top:10px"><a href="#" onclick="go('labs');return false" style="color:var(--primary);font-size:13px">View extracted labs →</a></div>`:''}
+  `;}
+
+async function savelab(){
+  const nm=v('al-name'),dt=v('al-date');if(!nm||!dt){toast('Name and date required.','error');return;}
+  try{const r=await jreq('/api/labs/add',{test_name:nm,test_date:dt,test_value:v('al-val'),unit:v('al-unit'),reference_range:v('al-range'),lab_name:v('al-lab'),is_abnormal:document.getElementById('al-abn').checked});
+    if(!r.ok)throw new Error((await r.json()).detail);toast('Lab saved!','success');go('labs');}catch(e){toast(e.message,'error');}
+}
+async function savevisit(){
+  const dt=v('av-date');if(!dt){toast('Date required.','error');return;}
+  try{const r=await jreq('/api/visits/add',{visit_date:dt,visit_type:v('av-type'),chief_complaint:v('av-comp'),clinical_notes:v('av-notes'),doctor_name:v('av-doc')});
+    if(!r.ok)throw new Error((await r.json()).detail);toast('Visit saved!','success');go('visits');}catch(e){toast(e.message,'error');}
+}
+async function savemed(){
+  const nm=v('am-name');if(!nm){toast('Name required.','error');return;}
+  try{const r=await jreq('/api/medications/add',{medication_name:nm,dosage:v('am-dose'),frequency:v('am-freq'),start_date:v('am-start'),prescribing_doctor:v('am-doc'),indication:v('am-ind'),is_active:true});
+    if(!r.ok)throw new Error((await r.json()).detail);toast('Medication saved!','success');go('medications');}catch(e){toast(e.message,'error');}
+}
+
+async function sendChat(){
+  const q=(v('chat-in')||'').trim();if(!q)return;
+  document.getElementById('chat-in').value='';
+  appendM(q,'user');const tid=appendM('Thinking...','think');
+  document.getElementById('chat-btn').disabled=true;
+  const file=document.getElementById('chat-file').files[0];
+  const save=document.getElementById('chat-save').checked;
+  try{let r,d;
+    if(file){const fd=new FormData();fd.append('question',q);fd.append('save_to_record',save);fd.append('file',file);
+      r=await req('/api/chat-with-file',{method:'POST',body:fd});document.getElementById('chat-file').value='';}
+    else{r=await jreq('/api/chat',{question:q,role:'patient'});}
+    d=await r.json();removeM(tid);
+    const src=d.sources||{};
+    const sl=[src.used_records?'📋 records':'',src.used_textbook?'📚 textbook':'',src.used_attachment?'📄 attachment':''].filter(Boolean).join(', ');
+    appendM(d.answer||'No response.','ai',sl);
+  }catch(e){removeM(tid);appendM('Sorry, something went wrong.','ai');}
+  finally{document.getElementById('chat-btn').disabled=false;}
+}
+function qask(q){document.getElementById('chat-in').value=q;sendChat();}
+function appendM(text,role,src=''){
+  const id='m'+Date.now()+Math.random().toString(36).slice(2);
+  const d=document.createElement('div');d.id=id;
+  d.className='msg '+(role==='user'?'msg-user':role==='think'?'msg-ai msg-thinking':'msg-ai');
+  d.innerHTML=role==='ai'?text.replace(/\n/g,'<br>')+(src?`<div class="msg-sources">Sources: ${src}</div>`:''):esc(text);
+  const m=document.getElementById('chat-msgs');m.appendChild(d);m.scrollTop=m.scrollHeight;return id;
+}
+function removeM(id){document.getElementById(id)?.remove();}
+
+function toast(msg,type='info'){
+  const e=document.createElement('div');e.className='toast toast-'+type;e.textContent=msg;
+  document.getElementById('toast-wrap').appendChild(e);setTimeout(()=>e.remove(),4000);}
+
+checkSession();
+</script>
+</body>
+</html>
